@@ -1,52 +1,84 @@
-import React, { useEffect } from "react"
-import rigoImageUrl from "../assets/img/rigo-baby.jpg";
-import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
+import React, { useState } from "react"
 
+//import { Context } from "../store/appContext";
+import useGlobalReducer from "../hooks/useGlobalReducer";  // Custom hook for accessing the global state.
+import { useNavigate } from "react-router-dom";
 export const Home = () => {
 
 	const { store, dispatch } = useGlobalReducer()
 
-	const loadMessage = async () => {
-		try {
-			const backendUrl = import.meta.env.VITE_BACKEND_URL
+	const [email, setEmail] = useState("");
+	const [password, setPassword] = useState("");
+	const navigate = useNavigate();
+	const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
-			if (!backendUrl) throw new Error("VITE_BACKEND_URL is not defined in .env file")
+	const handleSubmit = async (e) => {
+		e.preventDefault();
+		console.log("email:", email);
+		console.log("password:", password);
 
-			const response = await fetch(backendUrl + "/api/hello")
-			const data = await response.json()
 
-			if (response.ok) dispatch({ type: "set_hello", payload: data.message })
+		const res = await fetch(`${backendUrl}/api/login`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ email, password }),
+		});
 
-			return data
-
-		} catch (error) {
-			if (error.message) throw new Error(
-				`Could not fetch the message from the backend.
-				Please check if the backend is running and the backend port is public.`
-			);
+		if (res.ok) {
+			const data = await res.json();
+			sessionStorage.setItem("token", data.token);
+			navigate("/private");
+		} else {
+			alert("Invalid credentials.");
 		}
-
-	}
-
-	useEffect(() => {
-		loadMessage()
-	}, [])
+		//   actions.login(email, password)
+		//     .then((data) => {
+		//       if (data?.token) {
+		//         alert("Login successful");
+		//         sessionStorage.setItem("token", data.token);
+		//         navigate("/private");  // Corrected from Navigate to navigate function
+		//       } else {
+		//         alert("Invalid login credentials. Please try again.");
+		//       }
+		//     })
+		//     .catch((error) => console.error("Login failed:", error));
+	};
 
 	return (
 		<div className="text-center mt-5">
-			<h1 className="display-4">Hello Rigo!!</h1>
-			<p className="lead">
-				<img src={rigoImageUrl} className="img-fluid rounded-circle mb-3" alt="Rigo Baby" />
-			</p>
-			<div className="alert alert-info">
-				{store.message ? (
-					<span>{store.message}</span>
-				) : (
-					<span className="text-danger">
-						Loading message from the backend (make sure your python 🐍 backend is running)...
-					</span>
-				)}
-			</div>
+			<form onSubmit={handleSubmit}>
+				<h2>Log In</h2>
+				<div className="mb-3">
+					<label htmlFor="exampleInputEmail1" className="form-label">Email address</label>
+					<input
+						type="email"
+						className="form-control"
+						id="exampleInputEmail1"
+						aria-describedby="emailHelp"
+						value={email}
+						onChange={(e) => setEmail(e.target.value)}
+						required
+					/>
+					<div id="emailHelp" className="form-text">We'll never share your email with anyone else.</div>
+				</div>
+				<div className="mb-3">
+					<label htmlFor="exampleInputPassword1" className="form-label">Password</label>
+					<input
+						type="password"
+						className="form-control"
+						id="exampleInputPassword1"
+						value={password}
+						onChange={(e) => setPassword(e.target.value)}
+						required
+					/>
+				</div>
+				<div className="mb-3 form-check">
+					<input type="checkbox" className="form-check-input" id="exampleCheck1" />
+					<label className="form-check-label" htmlFor="exampleCheck1">Check me out</label>
+				</div>
+				<button type="submit" className="btn btn-primary">Submit</button>
+			</form>
+
 		</div>
 	);
 }; 
